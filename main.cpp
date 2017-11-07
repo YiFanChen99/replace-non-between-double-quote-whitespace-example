@@ -4,7 +4,11 @@
 #include <algorithm>
 using namespace std;
 
-static bool ReplaceWhitespaceNonBetweenDoubleQuote(string &strSubject)
+/**
+ * Using string::find, needs to transform between size_t and iterator.
+ * Able to print size_t, easy to trace.
+ */
+static bool ReplaceWhitespaceNonBetweenDoubleQuoteV1(string &strSubject)
 {
     printf("ReplaceWhitespace enter\n");
 	string::iterator startPos = strSubject.begin();
@@ -39,11 +43,69 @@ static bool ReplaceWhitespaceNonBetweenDoubleQuote(string &strSubject)
 	return true;
 }
 
+/**
+ * Using only iterator, refactoring from version 1.
+ */
+static bool ReplaceWhitespaceNonBetweenDoubleQuoteV2(string &strSubject)
+{
+	const string::iterator kSubjectEnd = strSubject.end();
+	string::iterator doubleQuoteStart = strSubject.begin();
+	string::iterator doubleQuoteEnd = doubleQuoteStart;
+	string::iterator lastDoubleQuoteEnd = doubleQuoteStart;
+
+	doubleQuoteStart = find(doubleQuoteStart, kSubjectEnd, '"');
+	while (kSubjectEnd != doubleQuoteStart) {
+		doubleQuoteEnd = find(doubleQuoteStart + 1, kSubjectEnd, '"');
+		if (kSubjectEnd == doubleQuoteEnd) {
+			// Unpaired double quote
+			break;
+		}
+
+		replace(lastDoubleQuoteEnd, doubleQuoteStart, ' ', '*');
+
+		lastDoubleQuoteEnd = doubleQuoteEnd;
+		doubleQuoteStart = find(doubleQuoteEnd + 1, kSubjectEnd, '"');
+	}
+
+	replace(lastDoubleQuoteEnd, kSubjectEnd, ' ', '*');
+	return true;
+}
+
+/**
+ * Iterate whole string by myself. Keep last double-quote position.
+ */
+static bool ReplaceWhitespaceNonBetweenDoubleQuoteV3(string &strSubject)
+{
+	const string::iterator kSubjectEnd = strSubject.end();
+	string::iterator lastDoubleQuote = kSubjectEnd;
+	string::iterator lastReplacementEnd = strSubject.begin();
+
+	for (string::iterator current = strSubject.begin(); kSubjectEnd != current; current++) {
+		if ('\"' != *current) {
+			continue;
+		}
+
+		if (lastDoubleQuote == kSubjectEnd) {
+			lastDoubleQuote = current;
+		} else {
+			replace(lastReplacementEnd, lastDoubleQuote, ' ', '*');
+
+			lastReplacementEnd = current;
+			lastDoubleQuote = kSubjectEnd;
+		}
+	}
+
+	replace(lastReplacementEnd, kSubjectEnd, ' ', '*');
+	return true;
+}
+
 int main(){
     string strEkko = " 1 \" 56 \" 012  \"  89 \" 3 \" ";
     printf("Input : %s\n", strEkko.c_str());
 
-    ReplaceWhitespaceNonBetweenDoubleQuote(strEkko);
+    ReplaceWhitespaceNonBetweenDoubleQuoteV1(strEkko);
+    // ReplaceWhitespaceNonBetweenDoubleQuoteV2(strEkko);
+    // ReplaceWhitespaceNonBetweenDoubleQuoteV3(strEkko);
     printf("Output: %s\n", strEkko.c_str());
 
     return 0;
